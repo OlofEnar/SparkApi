@@ -23,8 +23,10 @@
             decimal baseIndex = eventTotal / dateCount;
             decimal weightedIndex = baseIndex * weight;
             decimal scaledIndex = Math.Min(weightedIndex, maxScore);
+            decimal result = Math.Round(scaledIndex, 1);
 
-            return scaledIndex;
+            return result;
+            
         }
 
         public static decimal CalcIndexExpDecay(int eventTotal, int dateCount)
@@ -35,8 +37,11 @@
 
             decimal baseIndex = eventTotal / dateCount;
             decimal decayFactor = 1 - (decimal)Math.Exp((double)(-decayConstant * dateCount));
+            decimal calculation = (baseIndex * decayFactor) / 100;
 
-            return (baseIndex * decayFactor) / 100 ;
+            decimal result = Math.Round(calculation, 1);
+
+            return result;
         }
     }
 }
