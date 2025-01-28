@@ -6,15 +6,10 @@ namespace SparkApi.Models.DTOs.ResponseDTO
     public class UserDto
     {
         [JsonPropertyName("id")]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         [JsonPropertyName("score")]
         public decimal? Score { get; set; }
-        [JsonPropertyName("dailyEvents")]
-        public int? TotalDailyEvents { get; set; }
-        [JsonPropertyName("mostUsedDailyEvent")]
-
-        public string? MostUsedDailyEvent { get; set; }
 
         [JsonPropertyName("totalEvents")]
         public int? TotalEvents { get; set; }

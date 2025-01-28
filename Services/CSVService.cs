@@ -53,19 +53,6 @@ namespace SparkApi.Services
             
             var mappedData = mapper.Map<List<Event>>(data);
             var users = await dbContext.Users.ToListAsync();
-
-            DateOnly date = new DateOnly(2024,10,8);
-                //DateOnly.FromDateTime(DateTime.Today);
-
-            foreach (var user in users)
-            {
-                var userEvents = mappedData.Where(e => e.UserId == user.UserId).ToList();
-                user.TotalDailyEvents = userEvents.Count(e => e.Date == date);
-                user.MostUsedDailyEvent = userEvents
-                    .OrderByDescending(e => e.EventCount)
-                    .FirstOrDefault().EventName;
-            }
-
             try
             {
                 await dbContext.Events.AddRangeAsync(mappedData);
@@ -77,17 +64,6 @@ namespace SparkApi.Services
             {
                 Log.Error(ex, "Unable to import data");            
             }
-        }
-
-        public void UpdateTotalUserEvents(List<User> users)
-        {
-            foreach (var user in users)
-            {
-                if (user.Events != null)
-                { user.TotalEvents = user.Events.Count; }
-                else { user.TotalEvents = 0; }
-            }
-            dbContext.SaveChangesAsync();
         }
     }
 }

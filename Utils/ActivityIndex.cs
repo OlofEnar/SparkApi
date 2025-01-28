@@ -5,43 +5,65 @@
     // more suitable. 
     public static class ActivityIndex
     {
-        public static decimal CalcIndexWeighted(int eventTotal, int dateCount)
+        public static decimal CalcIndexWeighted(int eventTotal, int dateCount, int movingAverageWindow = 7)
         {
-            decimal dateTreshold = 5;
-            decimal scalingFactor = 5;
+            decimal dateThreshold = 5; // Minimum dates for weight adjustment
+            decimal scalingFactor = 5; // Logarithmic scaling factor
+            decimal maxScore = 100;
+            decimal minWeightFactor = 0.5m; // Minimum weight for users below dateThreshold
+            decimal normalizationFactor = 20; // Normalization for event scaling
+
+            if (dateCount == 0) return 0;
+
+            // Moving average factor for smoothing activity
+            decimal movingAverageFactor = Math.Min(1, (decimal)dateCount / movingAverageWindow);
+
+            // Weight calculation based on logarithmic growth
+            decimal weight = Math.Min(1, (decimal)Math.Log(dateCount + 1) / scalingFactor);
+
+            // Adjust weight further for low date counts
+            if (dateCount < dateThreshold)
+            {
+                weight *= Math.Max(minWeightFactor, (decimal)dateCount / dateThreshold);
+            }
+
+            // Combine weight with moving average smoothing
+            weight *= movingAverageFactor;
+
+            // Base index adjusted by normalization to prevent excessive scores
+            decimal baseIndex = ((decimal)eventTotal / dateCount) / normalizationFactor;
+
+            // Weighted and scaled index
+            decimal weightedIndex = baseIndex * weight;
+            decimal scaledIndex = Math.Min(weightedIndex, maxScore);
+
+            // Rounded result
+            return Math.Round(scaledIndex, 1);
+        }
+
+        public static decimal CalcHighValueActivityIndex(Dictionary<string, int> eventCounts, HashSet<string> highValueEventNames, int dateCount)
+        {
+            decimal highValueWeight = 2.0m; // High-value events are worth more
+            decimal normalizationFactor = 10; // Normalize high-value events
             decimal maxScore = 100;
 
             if (dateCount == 0) return 0;
 
-            decimal weight = Math.Min(1, (decimal)Math.Log(dateCount + 1) / scalingFactor);
+            int highValueEventTotal = eventCounts
+                .Where(kvp => highValueEventNames.Contains(kvp.Key))
+                .Sum(kvp => kvp.Value);
 
-            if (dateCount < dateTreshold)
-            {
-                weight *= (decimal)dateCount / dateTreshold;
-            }
+            int generalEventTotal = eventCounts.Values.Sum();
 
-            decimal baseIndex = eventTotal / dateCount;
-            decimal weightedIndex = baseIndex * weight;
-            decimal scaledIndex = Math.Min(weightedIndex, maxScore);
-            decimal result = Math.Round(scaledIndex, 1);
+            // Calculate high-value index relative to general activity
+            decimal baseIndex = (decimal)highValueEventTotal / Math.Max(1, generalEventTotal);
+            baseIndex *= highValueWeight;
 
-            return result;
-            
-        }
+            // Normalize and scale
+            decimal normalizedIndex = baseIndex / normalizationFactor;
+            decimal scaledIndex = Math.Min(normalizedIndex, maxScore);
 
-        public static decimal CalcIndexExpDecay(int eventTotal, int dateCount)
-        {
-            decimal decayConstant = 0.5m;
-
-            if (dateCount == 0) return 0;
-
-            decimal baseIndex = eventTotal / dateCount;
-            decimal decayFactor = 1 - (decimal)Math.Exp((double)(-decayConstant * dateCount));
-            decimal calculation = (baseIndex * decayFactor) / 100;
-
-            decimal result = Math.Round(calculation, 1);
-
-            return result;
+            return Math.Round(scaledIndex, 1);
         }
     }
 }
