@@ -400,3 +400,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Keys/rsa_key.p8
+/Keys/rsa_key.pub
+/.env
