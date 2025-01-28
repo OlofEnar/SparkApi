@@ -8,15 +8,11 @@ namespace SparkApi.Models.DbModels
     {
         [Key]
         public int EventId { get; set; }
-
-        public DateOnly Date { get; set; }
-
+        public DateTime Date { get; set; }
+        [MaxLength(50)]
         public string? EventName { get; set; }
-
-        public int EventCount { get; set; }
-
-        [ForeignKey("User")]
-        public Guid UserId { get; set; }
+        [ForeignKey(nameof(User))]
+        public string UserId { get; set; }
         public User? User { get; set; }
     }
 }

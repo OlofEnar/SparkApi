@@ -18,13 +18,12 @@ namespace SparkApi.Services
                     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                     Log.Information("Background task is running");
-                    var csvService = new CSVService(mapper, dbContext);
-                    await csvService.ImportCsvDatatoDb();
+                    //var csvService = new CSVService(mapper, dbContext);
+                    //await csvService.ImportCsvDatatoDb();
 
                     Log.Information("Updating Activity index");
-                    var dbService = new DbService(dbContext);
-                    await dbService.UpdateUsersScore();
-                    await dbService.UpdateTotalUserEvents();
+                    var dbService = new DbService(mapper, dbContext);
+                    await dbService.UpdateUsersScoreandTotalEvents();
 
                     await Task.Delay(TimeSpan.FromMinutes(2000), stoppingToken);
                 }
@@ -34,20 +33,5 @@ namespace SparkApi.Services
                 Log.Error(ex, "Unable to import data");           
             }
         }
-
-        private async Task UpdateDatabase(AppDbContext dbContext)
-        {
-            Log.Information("Background task is running");
-            var csvService = new CSVService(mapper, dbContext);
-            await csvService.ImportCsvDatatoDb();
-        }
-
-        private async Task UpdateActivityIndex(AppDbContext dbContext)
-        {
-            Log.Information("Updating Activity index");
-            var dbService = new DbService(dbContext);
-            await dbService.UpdateUsersScore();
-        }
-
     }
 }

@@ -6,7 +6,7 @@ namespace SparkApi.Models
     public class CsvModel
     {
         [Name("User")]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
 
         [Name("Event date")]
         public DateOnly Date { get; set; }

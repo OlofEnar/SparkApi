@@ -17,7 +17,7 @@ namespace SparkApi.Controllers
     {
         // GET: api/<UsersController>
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> GetUsers()
         {
             var users = await dbContext.Users.ToListAsync();
 
@@ -31,7 +31,6 @@ namespace SparkApi.Controllers
             return Ok(userDtos);
         }
 
-        // Get all users with included events
         // GET: api/<UsersController>
         [HttpGet("AllUsersWithEvents")]
         public async Task<IActionResult> GetUsersWithEvents()
@@ -52,7 +51,7 @@ namespace SparkApi.Controllers
 
         // GET api/<UsersController>/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<IActionResult> Get(string id)
         {
             var user = await dbContext.Users
                 .Include(u => u.Events)
@@ -72,7 +71,7 @@ namespace SparkApi.Controllers
 
         // GET api/<UsersController>/5
         [HttpGet("{userId}/events")]
-        public async Task<IActionResult> GetEventsByUserId(Guid userId)
+        public async Task<IActionResult> GetEventsByUserId(string userId)
         {
             var userEvents = await dbContext.Events
                 .Where(e => e.UserId == userId)
