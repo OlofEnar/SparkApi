@@ -8,16 +8,15 @@ namespace SparkApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SnowflakeControllerTEST(SnowflakeService snow, IMapper mapper) : ControllerBase
+    public class SnowflakeController(SnowflakeService snow, IMapper mapper) : ControllerBase
     {
-        private readonly SnowflakeService _snow = snow;
 
         [HttpGet("ImportSnowflakeData")]
         public async Task<IActionResult> ImportSnowflakeData()
         {
             try
             {
-                await _snow.GetSnowflakeData();
+                await snow.ProcessSnowflakeDataAsync();
                 //var eventDtos = mapper.Map<List<EventDto>>(events);
 
                 return Ok();

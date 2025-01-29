@@ -4,9 +4,8 @@ using SparkApi.Services;
 using SparkApi.Utils;
 using DotNetEnv;
 using Serilog;
+using SparkApi.Repositories;
 using Snowflake.Data.Client;
-using Snowflake.Data.Log;
-
 
 Env.Load();
 
@@ -32,12 +31,19 @@ builder.Services.AddDbContext<AppDbContext>(option => option.UseNpgsql(builder.C
 
 builder.Services.AddTransient<DbService>();
 
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<SnowflakeRepository>();
+
 // Snowflake stuff
 builder.Services.AddTransient<SnowflakeService>();
 
+// Dapper
+builder.Services.AddSingleton<ApiDbContext>();
+
 builder.Services.AddSingleton(provider =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("Snowflake");
+    var connectionString = Environment.GetEnvironmentVariable("SNOWFLAKE_CONNECTION");
     var conn = new SnowflakeDbConnection
     {
         ConnectionString = connectionString
@@ -62,13 +68,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
-
 app.UseCors("Dev");
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
