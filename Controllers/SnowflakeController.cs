@@ -2,21 +2,28 @@
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using Snowflake.Data.Client;
+using SparkApi.Repositories;
 using SparkApi.Services;
 
 namespace SparkApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SnowflakeController(SnowflakeService snow, IMapper mapper) : ControllerBase
+    public class SnowflakeController : ControllerBase
     {
+        private readonly SnowflakeRepository _snowRepo;
+
+        public SnowflakeController(SnowflakeRepository snowRepo)
+        {
+            _snowRepo = snowRepo;
+        }
 
         [HttpGet("ImportSnowflakeData")]
         public async Task<IActionResult> ImportSnowflakeData()
         {
             try
             {
-                await snow.ProcessSnowflakeDataAsync();
+                await _snowRepo.GetSnowflakeDataAsync();
                 //var eventDtos = mapper.Map<List<EventDto>>(events);
 
                 return Ok();

@@ -6,7 +6,11 @@ namespace SparkApi.Models.DTOs.ResponseDTO
     public class UserDto
     {
         [JsonPropertyName("id")]
-        public string UserId { get; set; }
+        public string Id { get; set; }
+        [JsonPropertyName("client version")]
+        public List<string> ClientVersion { get; set; } = [];
+        [JsonPropertyName("country")]
+        public List<string> UserCountry { get; set; } = [];
 
         [JsonPropertyName("score")]
         public decimal? Score { get; set; }

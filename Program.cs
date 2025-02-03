@@ -1,11 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SparkApi.Data;
+﻿using SparkApi.Data;
 using SparkApi.Services;
 using SparkApi.Utils;
 using DotNetEnv;
 using Serilog;
 using SparkApi.Repositories;
 using Snowflake.Data.Client;
+using SparkApi.Repositories.Interfaces;
 
 Env.Load();
 
@@ -27,23 +27,23 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddDbContext<AppDbContext>(option => option.UseNpgsql(builder.Configuration.GetConnectionString("Connection")));
-
-builder.Services.AddTransient<DbService>();
-
-builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IEventRepository, EventRepository>();
-builder.Services.AddScoped<SnowflakeRepository>();
-
-// Snowflake stuff
-builder.Services.AddTransient<SnowflakeService>();
 
 // Dapper
 builder.Services.AddSingleton<ApiDbContext>();
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+
+
+//builder.Services.AddTransient<DbService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<SnowflakeRepository>();
+builder.Services.AddScoped<SnowflakeService>();
+
+
 
 builder.Services.AddSingleton(provider =>
 {
-    var connectionString = Environment.GetEnvironmentVariable("SNOWFLAKE_CONNECTION");
+    var connectionString = Environment.GetEnvironmentVariable("SnowflakeConnection");
     var conn = new SnowflakeDbConnection
     {
         ConnectionString = connectionString

@@ -5,7 +5,7 @@ namespace SparkApi.Models.DTOs.ResponseDTO
     public class EventDto
     {
         [JsonPropertyName("id")]
-        public int EventId { get; set; }
+        public int Id { get; set; }
 
         [JsonPropertyName("date")]
         public DateTime Date { get; set; }
@@ -14,6 +14,6 @@ namespace SparkApi.Models.DTOs.ResponseDTO
         public string? EventName { get; set; }
 
         [JsonPropertyName("userId")]
-        public Guid UserId { get; set; }
+        public string UserId { get; set; }
     }
 }

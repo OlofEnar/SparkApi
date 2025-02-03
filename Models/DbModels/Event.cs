@@ -6,13 +6,9 @@ namespace SparkApi.Models.DbModels
 {
     public class Event
     {
-        [Key]
-        public int EventId { get; set; }
+        public int Id { get; set; }
         public DateTime Date { get; set; }
-        [MaxLength(50)]
         public string? EventName { get; set; }
-        [ForeignKey(nameof(User))]
         public string UserId { get; set; }
-        public User? User { get; set; }
     }
 }

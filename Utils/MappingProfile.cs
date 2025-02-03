@@ -11,7 +11,7 @@ namespace SparkApi.Utils
         {
             CreateMap<CsvModel, Event>()
                 .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
-                .ForMember(dest => dest.EventId, opt => opt.Ignore()); //Db handles the Id
+                .ForMember(dest => dest.Id, opt => opt.Ignore()); //Db handles the Id
 
             CreateMap<Event, EventDto>();
 
