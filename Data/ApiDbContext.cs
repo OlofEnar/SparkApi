@@ -15,10 +15,6 @@ namespace SparkApi.Data
         public IDbConnection CreateConnection()
         {
             var connectionString = Environment.GetEnvironmentVariable("DbConnection");
-            if (string.IsNullOrEmpty(connectionString))
-            {
-                throw new InvalidOperationException("Connection string is not configured in the environment.");
-            }
 
             return new NpgsqlConnection(connectionString);
         }

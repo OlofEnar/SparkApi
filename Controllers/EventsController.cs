@@ -20,7 +20,7 @@ namespace SparkApi.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetEvents()
+        public async Task<IActionResult> Events()
         {
             var events = await _eventRepo.GetEventsAsync();
 
@@ -33,7 +33,7 @@ namespace SparkApi.Controllers
             return Ok(eventDtos);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetEventsById(int id)
         {
             var userEvent = await _eventRepo.GetEventByIdAsync(id);
@@ -47,21 +47,7 @@ namespace SparkApi.Controllers
             return Ok(eventDto);
         }
 
-        [HttpGet("user-id")]
-        public async Task<IActionResult> GetEventsByUserId(string userId)
-        {
-            var userEvents = await _eventRepo.GetEventsByUserIdAsync(userId);
-
-            if (userEvents == null)
-            {
-                return NotFound();
-            }
-
-            var eventDtos = _mapper.Map<List<EventDto>>(userEvents);
-            return Ok(eventDtos);
-        }
-
-        [HttpGet("by-name")]
+        [HttpGet("{eventName}")]
         public async Task<IActionResult> GetEventsByName(string eventName)
         {
             var userEvents = await _eventRepo.GetEventsByNameAsync(eventName);

@@ -17,7 +17,7 @@ namespace SparkApi.Utils
 
             // Response - Map db model to DTO
             CreateMap<User, UserDto>()
-                .ForMember(dest => dest.EventsDtos, opt => opt.MapFrom(src => src.Events));
+                .ForMember(dest => dest.EventDtos, opt => opt.MapFrom(src => src.Events));
         }
     }
 }

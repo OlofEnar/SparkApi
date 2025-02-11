@@ -6,6 +6,8 @@ using Serilog;
 using SparkApi.Repositories;
 using Snowflake.Data.Client;
 using SparkApi.Repositories.Interfaces;
+using Dapper;
+using SparkApi.Models;
 
 Env.Load();
 
@@ -31,6 +33,8 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 // Dapper
 builder.Services.AddSingleton<ApiDbContext>();
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+SqlMapper.AddTypeHandler(new DapperJsonbListTypeHandler<EventDetail>());
+SqlMapper.AddTypeHandler(new DapperDateOnlyTypeHandler());
 
 
 //builder.Services.AddTransient<DbService>();

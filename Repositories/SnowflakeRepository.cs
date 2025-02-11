@@ -1,9 +1,6 @@
-﻿using Dapper;
-using Serilog;
+﻿using Serilog;
 using Snowflake.Data.Client;
 using SparkApi.Data;
-using SparkApi.Models.DbModels;
-using System.Data.Common;
 
 namespace SparkApi.Repositories
 {
@@ -18,7 +15,7 @@ namespace SparkApi.Repositories
             _context = context;
         }
 
-        public async Task GetSnowflakeDataAsync()
+        public async Task<string> GetSnowflakeDataJsonAsync()
         {
             try
             {
@@ -26,87 +23,61 @@ namespace SparkApi.Repositories
                 await _conn.OpenAsync(CancellationToken.None).ConfigureAwait(false);
                 Console.WriteLine("Connected.");
 
-                using SnowflakeDbCommand cmd = (SnowflakeDbCommand)_conn.CreateCommand();
+                using var cmd = (SnowflakeDbCommand)_conn.CreateCommand();
+                cmd.CommandText = @"
+                    WITH BaseEvents AS (
+                        SELECT 
+                            TO_DATE(event_timestamp) AS EventDate,
+                            event_name AS EventName,
+                            EVENT_JSON:client_id::STRING AS UserId,
+                            EVENT_JSON:userCountry::STRING AS Country,
+                            EVENT_JSON:clientVersion::STRING AS ClientVersion,
+                            event_timestamp AS Timestamp,
+                            COALESCE(NULLIF(EVENT_JSON:view::STRING, ''), 'UNKNOWN') AS FromView
+                        FROM ACCOUNT_EVENTS
+                        WHERE event_timestamp > CURRENT_DATE - 1
+                            AND EVENT_JSON:platform::STRING = 'PC_CLIENT'
+                            AND EVENT_JSON:client_id::STRING != ''
+                    ),
+                    AggregatedEvents AS (
+                        SELECT 
+                            EventDate,
+                            EventName,
+                            UserId,
+                            Country,
+                            ClientVersion,
+                            COUNT(*) AS EventCount,
+                            ARRAY_AGG(
+                                OBJECT_CONSTRUCT(
+                                    'Timestamp', Timestamp,
+                                    'FromView', FromView
+                                )
+                            ) AS EventDetails
+                        FROM BaseEvents
+                        GROUP BY EventDate, EventName, UserId, Country, ClientVersion
+                    )
+                    SELECT ARRAY_AGG(
+                        OBJECT_CONSTRUCT(
+                            'EventDate', EventDate,
+                            'EventName', EventName,
+                            'UserId', UserId,
+                            'Country', Country,
+                            'ClientVersion', ClientVersion,
+                            'EventCount', EventCount,
+                            'EventDetails', EventDetails
+                        )
+                    ) AS json_result
+                    FROM AggregatedEvents;
+                ";
 
-                cmd.CommandText = "SELECT event_timestamp as \"Event date\"," +
-                    "\r\nevent_name as \"Event name\"," +
-                    "\r\nEVENT_JSON:userCountry::STRING as \"Country\"," +
-                    "\r\nEVENT_JSON:clientVersion::STRING as \"Client version\"," +
-                    "\r\nEVENT_JSON:client_id::STRING as \"User\"," +
-                    "\r\nFROM ACCOUNT_EVENTS\r\n" +
-                    "\r\nWHERE event_timestamp > current_date - 1 and" +
-                    "\r\nEVENT_JSON:platform::STRING ='PC_CLIENT' and" +
-                    "\r\nEVENT_JSON:client_id::STRING != ''";
-
-                Console.WriteLine("Sending query...");
-                var queryId = await cmd.ExecuteAsyncInAsyncMode(CancellationToken.None).ConfigureAwait(false);
-                var queryStatus = await cmd.GetQueryStatusAsync(queryId, CancellationToken.None).ConfigureAwait(false);
-                using DbDataReader reader = await cmd.GetResultsFromQueryIdAsync(queryId, CancellationToken.None).ConfigureAwait(false);
-                Console.WriteLine($"Querystatus: {queryStatus}, query id: {queryId}");
-
-                using var connection = _context.CreateConnection();
-
-                var existingUserIds = new HashSet<string>(await connection.QueryAsync<string>("SELECT id FROM users"));
-                var newUserIds = new HashSet<string>();
-
-                var users = new List<User>();
-                var events = new List<Event>();
-
-                int dateOrdinal = reader.GetOrdinal("Event date");
-                int nameOrdinal = reader.GetOrdinal("Event name");
-                int idOrdinal = reader.GetOrdinal("User");
-                int countryOrdinal = reader.GetOrdinal("Country");
-                int versionOrdinal = reader.GetOrdinal("Client version");
-
-                Console.WriteLine("Extracting user and event data...");
-                while (await reader.ReadAsync(CancellationToken.None).ConfigureAwait(false))
+                using var reader = cmd.ExecuteReader();
+                if (reader.Read())
                 {
-                    var userId = reader.GetString(idOrdinal);
-                    DateTime date = reader.GetDateTime(dateOrdinal);
-
-                    if (!existingUserIds.Contains(userId) && newUserIds.Add(userId))
-                    {
-                        var country = reader.IsDBNull(countryOrdinal) ? null : reader.GetString(countryOrdinal);
-                        var version = reader.IsDBNull(versionOrdinal) ? null : reader.GetString(versionOrdinal);
-
-                        users.Add(new User
-                        {
-                            Id = userId,
-                            UserCountry = [country],
-                            ClientVersion = [version]
-                        });
-                    }
-
-                    events.Add(new Event
-                    {
-                        Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
-                        EventName = reader.GetString(nameOrdinal),
-                        UserId = userId,
-                    });
+                    string response = reader.GetString(0);
+                    return response;
                 }
-
-                Console.WriteLine($"Extracted {users.Count} new users and {events.Count} events.");
-
-                if (users.Count > 0)
-                {
-                    const string insertUsersSql = @"
-                        INSERT INTO users (id, user_country, client_version)
-                        VALUES (@Id, @UserCountry, @ClientVersion)";
-
-                    await connection.ExecuteAsync(insertUsersSql, users);
-                    Console.WriteLine($"Inserted {users.Count} new users.");
-                }
-
-                if (events.Count > 0)
-                {
-                    const string insertEventsSql = @"
-                        INSERT INTO events (date, event_name, user_id)
-                        VALUES (@Date, @EventName, @UserId)";
-
-                    await connection.ExecuteAsync(insertEventsSql, events);
-                    Console.WriteLine($"Inserted {events.Count} events.");
-                } 
-        }
+                return "No data to read";
+            }
             catch (SnowflakeDbException ex)
             {
                 Log.Error(ex, "Error retrieving data from Snowflake.");

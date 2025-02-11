@@ -11,11 +11,11 @@ namespace SparkApi.Controllers
     [ApiController]
     public class SnowflakeController : ControllerBase
     {
-        private readonly SnowflakeRepository _snowRepo;
+        private readonly SnowflakeService _snowService;
 
-        public SnowflakeController(SnowflakeRepository snowRepo)
+        public SnowflakeController(SnowflakeService snowService)
         {
-            _snowRepo = snowRepo;
+            _snowService = snowService;
         }
 
         [HttpGet("ImportSnowflakeData")]
@@ -23,9 +23,7 @@ namespace SparkApi.Controllers
         {
             try
             {
-                await _snowRepo.GetSnowflakeDataAsync();
-                //var eventDtos = mapper.Map<List<EventDto>>(events);
-
+                await _snowService.ProcessSnowflakeDataAsync();
                 return Ok();
             }
             catch (SnowflakeDbException ex)
@@ -38,8 +36,6 @@ namespace SparkApi.Controllers
                 Log.Error($"Unexpected Error: {ex.Message}");
                 return StatusCode(500, $"An unexpected error occurred: {ex.Message}");
             }
-
         }
     }
-
 }

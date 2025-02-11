@@ -8,5 +8,7 @@ namespace SparkApi.Repositories.Interfaces
         Task<User?> GetUserByIdAsync(string id);
         Task<IEnumerable<User>> GetUsersAsync();
         Task<IEnumerable<User>> GetUsersWithEventsAsync();
+        Task<IEnumerable<Event>> GetEventsByUserIdAsync(string userId);
+
     }
 }

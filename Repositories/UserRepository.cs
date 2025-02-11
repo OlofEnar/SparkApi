@@ -3,7 +3,6 @@ using SparkApi.Models.DbModels;
 using Dapper;
 using SparkApi.Repositories.Interfaces;
 using AutoMapper;
-using SparkApi.Models.DTOs.ResponseDTO;
 
 namespace SparkApi.Repositories
 {
@@ -61,6 +60,17 @@ namespace SparkApi.Repositories
             connection.Open();
             var user = await connection.QuerySingleOrDefaultAsync<User>(sql, new { id });
             return user;
+        }
+
+        public async Task<IEnumerable<Event>> GetEventsByUserIdAsync(string userId)
+        {
+            const string sql = "SELECT * FROM Events WHERE user_id = @UserId";
+
+            using var connection = _context.CreateConnection();
+            connection.Open();
+            var userEvents = (await connection.QueryAsync<Event>(sql, new { UserId = userId })).ToList();
+
+            return userEvents;
         }
     }
 }

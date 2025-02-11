@@ -33,7 +33,7 @@ namespace SparkApi.Controllers
             return Ok(userDtos);
         }
 
-        [HttpGet("get-all")]
+        [HttpGet]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _userRepo.GetUsersAsync();
@@ -59,6 +59,20 @@ namespace SparkApi.Controllers
 
             var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
+        }
+
+        [HttpGet("{userId}/events")]
+        public async Task<IActionResult> GetEventsByUserId(string userId)
+        {
+            var userEvents = await _userRepo.GetEventsByUserIdAsync(userId);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            var eventDtos = _mapper.Map<List<EventDto>>(userEvents);
+            return Ok(eventDtos);
         }
     }
 }
