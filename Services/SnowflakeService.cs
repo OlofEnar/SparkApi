@@ -1,96 +1,92 @@
-﻿using Serilog;
-using Snowflake.Data.Client;
-using SparkApi.Models.DbModels;
-using System.Data.Common;
-
+﻿using SparkApi.Data;
+using SparkApi.Repositories;
+using Dapper;
+using Serilog;
 namespace SparkApi.Services
 {
-    public class SnowflakeService(SnowflakeDbConnection conn, DbService dbService)
+    public class SnowflakeService
     {
-        public async Task GetSnowflakeData()
+        private readonly ApiDbContext _context;
+        private readonly SnowflakeRepository _snowRepo;
+        private readonly ImportTimestampService _timestampService;
+
+        public SnowflakeService(ApiDbContext context, SnowflakeRepository snowRepo, ImportTimestampService timestampService)
         {
-            var existingUserIds = await dbService.GetUserIds();
-            var newUserIds = new HashSet<string>();
-            var users = new List<User>();
-            var events = new List<Event>();
-        
+            _context = context;
+            _snowRepo = snowRepo;
+            _timestampService = timestampService;
+        }
+
+        public async Task ProcessSnowflakeDataAsync()
+        {
+            Log.Information("Starting ProcessSnowFlakeData...");
+            int daysToImport = CalcDaysToImport();
+            Log.Information($"Days to fetch from snowflake: {daysToImport}");
+
+            var userSql = GetUserSql();
+            var eventSql = GetEventSql();
+
+            using var dbConn = _context.CreateConnection();
+            var response = await _snowRepo.GetSnowflakeDataAsync(daysToImport);
+
+            dbConn.Open();
+            using var transaction = dbConn.BeginTransaction();
             try
             {
-                Console.WriteLine("Connecting to Snowflake...");
-                await conn.OpenAsync(CancellationToken.None).ConfigureAwait(false);
-                Console.WriteLine("Connected.");
+                int userRows = await dbConn.ExecuteAsync(userSql, new { JsonData = response }, transaction);
+                int eventRows = await dbConn.ExecuteAsync(eventSql, new { JsonData = response }, transaction);
+                transaction.Commit();
 
-                using SnowflakeDbCommand cmd = (SnowflakeDbCommand)conn.CreateCommand();
-
-                cmd.CommandText = "SELECT event_timestamp as \"Event date\"," +
-                    "\r\nevent_name as \"Event name\"," +
-                    "\r\nEVENT_JSON:userCountry::STRING as \"Country\"," +
-                    "\r\nEVENT_JSON:clientVersion::STRING as \"Client version\"," +
-                    "\r\nEVENT_JSON:client_id::STRING as \"User\"," +
-                    "\r\nFROM ACCOUNT_EVENTS\r\n" +
-                    "\r\nWHERE event_timestamp > current_date - 1 and" +
-                    "\r\nEVENT_JSON:platform::STRING ='PC_CLIENT' and" +
-                    "\r\nEVENT_JSON:client_id::STRING != ''";
-
-                Console.WriteLine("Sending query...");
-                var queryId = await cmd.ExecuteAsyncInAsyncMode(CancellationToken.None).ConfigureAwait(false);
-                var queryStatus = await cmd.GetQueryStatusAsync(queryId, CancellationToken.None).ConfigureAwait(false);
-                using DbDataReader reader = await cmd.GetResultsFromQueryIdAsync(queryId, CancellationToken.None).ConfigureAwait(false);
-                Console.WriteLine($"Querystatus: {queryStatus}, query id: {queryId}");
-
-                int dateOrdinal = reader.GetOrdinal("Event date");
-                int nameOrdinal = reader.GetOrdinal("Event name");
-                int idOrdinal = reader.GetOrdinal("User");
-                int countryOrdinal = reader.GetOrdinal("Country");
-                int versionOrdinal = reader.GetOrdinal("Client version");
-
-                Console.WriteLine("Extracting user and event data...");
-                while (await reader.ReadAsync(CancellationToken.None).ConfigureAwait(false))
-                {
-                    var userId = reader.GetString(idOrdinal);
-                    DateTime date = reader.GetDateTime(dateOrdinal);
-
-                    if (!existingUserIds.Contains(userId) && newUserIds.Add(userId))
-                    {
-                        var country = reader.IsDBNull(countryOrdinal) ? null : reader.GetString(countryOrdinal);
-                        var version = reader.IsDBNull(versionOrdinal) ? null : reader.GetString(versionOrdinal);
-
-                        users.Add(new User
-                        {
-                            UserId = userId,
-                            UserCountry = [country],
-                            ClientVersion = [version],
-                        });
-                    }
-
-                    events.Add(new Event
-                    {
-                        Date = DateTime.SpecifyKind(date, DateTimeKind.Utc),
-                        EventName = reader.GetString(nameOrdinal),
-                        UserId = userId,
-                    });
-                }
-                Console.WriteLine($"New events: {events.Count}, New users: {users.Count}, users in Db: {existingUserIds.Count}");
+                Log.ForContext("SourceContext", "ImportLogger")
+                    .Information($"IMPORT SUCCESS, {userRows} new users, {eventRows} events");
+                _timestampService.WriteImportTimestamp(DateTime.UtcNow);
             }
-
-            catch (SnowflakeDbException ex)
+            catch (Exception ex)
             {
-                Log.Error($"Error retrieving data: {ex.Message}");
+                Log.Error(ex, "Error during Db import.");
+                transaction.Rollback();
             }
-            finally
-            {
-                await conn.CloseAsync();
-            }
+            Log.CloseAndFlush();
+        }
 
-            const int batchSize = 1000;
+        private static string GetUserSql()
+        {
+            string sql = @"
+                INSERT INTO users (id, client_version, user_country)
+                SELECT DISTINCT 
+                    event_data->>'UserId',
+                    ARRAY[event_data->>'ClientVersion'],
+                    ARRAY[event_data->>'Country']
+                FROM jsonb_array_elements(@JsonData::jsonb) AS event_data
+                ON CONFLICT (id) DO NOTHING;
+            ";
+            return sql;
+        }
 
-            await dbService.ImportNewUserstoDb(users);
+        private static string GetEventSql()
+        {
+            string sql = @"
+                INSERT INTO events (date, event_details, event_count, event_name, user_id)
+                SELECT 
+                    (event_data->>'EventDate')::date,
+                    event_data->'EventDetails',
+                    (event_data->>'EventCount')::int,
+                    event_data->>'EventName',
+                    event_data->>'UserId'
+                FROM jsonb_array_elements(@JsonData::jsonb) AS event_data;
+            ";
+            return sql;
+        }
 
-            for (int i = 0; i < events.Count; i += batchSize)
-            {
-                var batch = events.Skip(i).Take(batchSize).ToList();
-                await dbService.ImportEventstoDb(batch);
-            }
+        private int CalcDaysToImport()
+        {
+            DateTime? lastTimestamp = _timestampService.ReadImportTimestamp();
+            Log.Information($"Last logged import: {lastTimestamp}");
+
+            int daysToImport = lastTimestamp.HasValue
+                ? (int)(DateTime.UtcNow - lastTimestamp.Value).TotalDays
+                : 1;
+            return daysToImport;
         }
     }
 }

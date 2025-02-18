@@ -1,20 +1,18 @@
-﻿using SparkApi.Models.DbModels;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace SparkApi.Models.DTOs.ResponseDTO
 {
     public class UserDto
     {
-        [JsonPropertyName("id")]
-        public string UserId { get; set; }
+        public string Id { get; set; }
+        public List<string> ClientVersion { get; set; } = [];
+        public List<string> UserCountry { get; set; } = [];
 
-        [JsonPropertyName("score")]
         public decimal? Score { get; set; }
 
-        [JsonPropertyName("totalEvents")]
         public int? TotalEvents { get; set; }
 
         [JsonPropertyName("events")]
-        public ICollection<EventDto>? EventsDtos { get; set; } = [];
+        public ICollection<EventDto>? EventDtos { get; set; } = [];
     }
 }

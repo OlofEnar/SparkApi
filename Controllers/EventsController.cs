@@ -1,46 +1,64 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SparkApi.Data;
-using SparkApi.Models.DbModels;
 using SparkApi.Models.DTOs.ResponseDTO;
+using SparkApi.Repositories.Interfaces;
 
 
 namespace SparkApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class EventsController(AppDbContext dbContext, IMapper mapper) : ControllerBase
+    public class EventsController : ControllerBase
     {
-        [HttpGet]
-        public async Task<IActionResult> Get()
+        private readonly IEventRepository _eventRepo;
+        private readonly IMapper _mapper;
+
+        public EventsController(IEventRepository eventRepo, IMapper mapper)
         {
-            var events = await dbContext.Events
-                .ToListAsync();
+            _eventRepo = eventRepo;
+            _mapper = mapper;
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Events()
+        {
+            var events = await _eventRepo.GetEventsAsync();
 
             if (events == null)
             {
                 return NotFound();
             }
 
-            var eventDtos = mapper.Map<List<EventDto>>(events);
-
+            var eventDtos = _mapper.Map<List<EventDto>>(events);
             return Ok(eventDtos);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        [HttpGet("{id:int}")]
+        public async Task<IActionResult> GetEventsById(int id)
         {
-            var userEvent = await dbContext.Events
-                .FirstOrDefaultAsync(e => e.EventId == id);
+            var userEvent = await _eventRepo.GetEventByIdAsync(id);
 
             if (userEvent == null)
             {
                 return NotFound();
             }
 
-            var eventDto = mapper.Map<EventDto>(userEvent);
+            var eventDto = _mapper.Map<EventDto>(userEvent);
             return Ok(eventDto);
+        }
+
+        [HttpGet("{eventName}")]
+        public async Task<IActionResult> GetEventsByName(string eventName)
+        {
+            var userEvents = await _eventRepo.GetEventsByNameAsync(eventName);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            var eventDtos = _mapper.Map<List<EventDto>>(userEvents);
+            return Ok(eventDtos);
         }
     }
 }

@@ -1,18 +1,14 @@
-﻿using CsvHelper.Configuration.Attributes;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿
 
 namespace SparkApi.Models.DbModels
 {
     public class Event
     {
-        [Key]
-        public int EventId { get; set; }
-        public DateTime Date { get; set; }
-        [MaxLength(50)]
+        public int Id { get; set; }
+        public DateOnly Date { get; set; }
         public string? EventName { get; set; }
-        [ForeignKey(nameof(User))]
+        public int EventCount { get; set; }
+        public List<EventDetail>? EventDetails { get; set; }
         public string UserId { get; set; }
-        public User? User { get; set; }
     }
 }

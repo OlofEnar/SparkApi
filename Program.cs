@@ -1,12 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore;
-using SparkApi.Data;
+﻿using SparkApi.Data;
 using SparkApi.Services;
 using SparkApi.Utils;
 using DotNetEnv;
 using Serilog;
+using SparkApi.Repositories;
 using Snowflake.Data.Client;
-using Snowflake.Data.Log;
-
+using SparkApi.Repositories.Interfaces;
+using Dapper;
+using SparkApi.Models;
 
 Env.Load();
 
@@ -28,16 +29,29 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
-builder.Services.AddDbContext<AppDbContext>(option => option.UseNpgsql(builder.Configuration.GetConnectionString("Connection")));
 
-builder.Services.AddTransient<DbService>();
+// Dapper
+builder.Services.AddSingleton<ApiDbContext>();
+Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
+SqlMapper.AddTypeHandler(new DapperJsonbListTypeHandler<EventDetail>());
+SqlMapper.AddTypeHandler(new DapperDateOnlyTypeHandler());
 
-// Snowflake stuff
-builder.Services.AddTransient<SnowflakeService>();
+
+//builder.Services.AddTransient<DbService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<SnowflakeRepository>();
+builder.Services.AddScoped<SnowflakeService>();
+
+// Used for reading & writing sucessful Db import timestamp 
+builder.Services.AddSingleton<ImportTimestampService>();
+
+builder.Services.AddHostedService<DailyTaskService>();
+
 
 builder.Services.AddSingleton(provider =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("Snowflake");
+    var connectionString = Environment.GetEnvironmentVariable("SnowflakeConnection");
     var conn = new SnowflakeDbConnection
     {
         ConnectionString = connectionString
@@ -45,10 +59,6 @@ builder.Services.AddSingleton(provider =>
     return conn;
 });
 
-
-//builder.Services.AddHostedService<StartupService>();
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -62,13 +72,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
-
 app.UseCors("Dev");
-
 app.UseHttpsRedirection();
-
 app.UseAuthorization();
-
 app.MapControllers();
-
 app.Run();
