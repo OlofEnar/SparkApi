@@ -1,21 +1,20 @@
 ﻿using Serilog;
 using Snowflake.Data.Client;
 using SparkApi.Data;
+using SparkApi.Services;
 
 namespace SparkApi.Repositories
 {
     public class SnowflakeRepository
     {
         private readonly SnowflakeDbConnection _conn;
-        private readonly ApiDbContext _context;
 
-        public SnowflakeRepository(SnowflakeDbConnection conn, ApiDbContext context)
+        public SnowflakeRepository(SnowflakeDbConnection conn)
         {
             _conn = conn;
-            _context = context;
         }
 
-        public async Task<string> GetSnowflakeDataJsonAsync()
+        public async Task<string> GetSnowflakeDataAsync(int daysToImport)
         {
             try
             {
@@ -24,7 +23,7 @@ namespace SparkApi.Repositories
                 Console.WriteLine("Connected.");
 
                 using var cmd = (SnowflakeDbCommand)_conn.CreateCommand();
-                cmd.CommandText = @"
+                cmd.CommandText = @$"
                     WITH BaseEvents AS (
                         SELECT 
                             TO_DATE(event_timestamp) AS EventDate,
@@ -35,7 +34,7 @@ namespace SparkApi.Repositories
                             event_timestamp AS Timestamp,
                             COALESCE(NULLIF(EVENT_JSON:view::STRING, ''), 'UNKNOWN') AS FromView
                         FROM ACCOUNT_EVENTS
-                        WHERE event_timestamp > CURRENT_DATE - 1
+                        WHERE event_timestamp > CURRENT_DATE - {daysToImport}
                             AND EVENT_JSON:platform::STRING = 'PC_CLIENT'
                             AND EVENT_JSON:client_id::STRING != ''
                     ),
@@ -74,6 +73,7 @@ namespace SparkApi.Repositories
                 if (reader.Read())
                 {
                     string response = reader.GetString(0);
+                    Log.Information("Snowflake data fetched successfully.");
                     return response;
                 }
                 return "No data to read";

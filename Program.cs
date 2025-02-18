@@ -43,6 +43,10 @@ builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<SnowflakeRepository>();
 builder.Services.AddScoped<SnowflakeService>();
 
+// Used for reading & writing sucessful Db import timestamp 
+builder.Services.AddSingleton<ImportTimestampService>();
+
+builder.Services.AddHostedService<DailyTaskService>();
 
 
 builder.Services.AddSingleton(provider =>
@@ -55,10 +59,6 @@ builder.Services.AddSingleton(provider =>
     return conn;
 });
 
-
-//builder.Services.AddHostedService<StartupService>();
-
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

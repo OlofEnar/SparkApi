@@ -1,5 +1,4 @@
 ﻿using SparkApi.Models.DbModels;
-using SparkApi.Models.DTOs.ResponseDTO;
 
 namespace SparkApi.Repositories.Interfaces
 {
@@ -7,7 +6,6 @@ namespace SparkApi.Repositories.Interfaces
     {
         Task<Event?> GetEventByIdAsync(int id);
         Task<IEnumerable<Event>> GetEventsByNameAsync(string eventName);
-
         Task<IEnumerable<Event>> GetEventsAsync();
     }
 }

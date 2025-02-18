@@ -12,6 +12,7 @@ namespace SparkApi.Models.DTOs.ResponseDTO
 
         public int? TotalEvents { get; set; }
 
+        [JsonPropertyName("events")]
         public ICollection<EventDto>? EventDtos { get; set; } = [];
     }
 }

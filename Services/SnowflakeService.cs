@@ -1,42 +1,52 @@
 ﻿using SparkApi.Data;
 using SparkApi.Repositories;
 using Dapper;
+using Serilog;
 namespace SparkApi.Services
 {
     public class SnowflakeService
     {
         private readonly ApiDbContext _context;
         private readonly SnowflakeRepository _snowRepo;
-        private readonly ILogger<SnowflakeService> _logger;
+        private readonly ImportTimestampService _timestampService;
 
-        public SnowflakeService(ApiDbContext context, SnowflakeRepository snowRepo, ILogger<SnowflakeService> logger)
+        public SnowflakeService(ApiDbContext context, SnowflakeRepository snowRepo, ImportTimestampService timestampService)
         {
             _context = context;
             _snowRepo = snowRepo;
-            _logger = logger;
+            _timestampService = timestampService;
         }
 
         public async Task ProcessSnowflakeDataAsync()
         {
+            Log.Information("Starting ProcessSnowFlakeData...");
+            int daysToImport = CalcDaysToImport();
+            Log.Information($"Days to fetch from snowflake: {daysToImport}");
+
             var userSql = GetUserSql();
             var eventSql = GetEventSql();
 
             using var dbConn = _context.CreateConnection();
-            var response = await _snowRepo.GetSnowflakeDataJsonAsync();
+            var response = await _snowRepo.GetSnowflakeDataAsync(daysToImport);
 
             dbConn.Open();
             using var transaction = dbConn.BeginTransaction();
             try
             {
-                await dbConn.ExecuteAsync(userSql, new { JsonData = response }, transaction);
-                await dbConn.ExecuteAsync(eventSql, new { JsonData = response }, transaction);
+                int userRows = await dbConn.ExecuteAsync(userSql, new { JsonData = response }, transaction);
+                int eventRows = await dbConn.ExecuteAsync(eventSql, new { JsonData = response }, transaction);
                 transaction.Commit();
+
+                Log.ForContext("SourceContext", "ImportLogger")
+                    .Information($"IMPORT SUCCESS, {userRows} new users, {eventRows} events");
+                _timestampService.WriteImportTimestamp(DateTime.UtcNow);
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error inserting data: " + ex.Message);
+                Log.Error(ex, "Error during Db import.");
                 transaction.Rollback();
             }
+            Log.CloseAndFlush();
         }
 
         private static string GetUserSql()
@@ -66,6 +76,17 @@ namespace SparkApi.Services
                 FROM jsonb_array_elements(@JsonData::jsonb) AS event_data;
             ";
             return sql;
+        }
+
+        private int CalcDaysToImport()
+        {
+            DateTime? lastTimestamp = _timestampService.ReadImportTimestamp();
+            Log.Information($"Last logged import: {lastTimestamp}");
+
+            int daysToImport = lastTimestamp.HasValue
+                ? (int)(DateTime.UtcNow - lastTimestamp.Value).TotalDays
+                : 1;
+            return daysToImport;
         }
     }
 }
