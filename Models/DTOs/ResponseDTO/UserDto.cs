@@ -4,13 +4,9 @@ namespace SparkApi.Models.DTOs.ResponseDTO
 {
     public class UserDto
     {
-        public string Id { get; set; }
-        public List<string> ClientVersion { get; set; } = [];
-        public List<string> UserCountry { get; set; } = [];
-
-        public decimal? Score { get; set; }
-
-        public int? TotalEvents { get; set; }
+        public required string Id { get; set; }
+        public string? ClientVersion { get; set; }
+        public string? UserCountry { get; set; }
 
         [JsonPropertyName("events")]
         public ICollection<EventDto>? EventDtos { get; set; } = [];

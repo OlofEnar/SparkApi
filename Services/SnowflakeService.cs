@@ -55,8 +55,8 @@ namespace SparkApi.Services
                 INSERT INTO users (id, client_version, user_country)
                 SELECT DISTINCT 
                     event_data->>'UserId',
-                    ARRAY[event_data->>'ClientVersion'],
-                    ARRAY[event_data->>'Country']
+                    event_data->>'ClientVersion',
+                    event_data->>'Country'
                 FROM jsonb_array_elements(@JsonData::jsonb) AS event_data
                 ON CONFLICT (id) DO NOTHING;
             ";

@@ -21,7 +21,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("Dev",
     builder =>
     {
-        builder.WithOrigins("http://localhost:5173", "http://localhost:7184")
+        builder.WithOrigins(
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:7184")
         .AllowAnyMethod()
         .AllowAnyHeader();
     });
@@ -45,7 +49,6 @@ builder.Services.AddScoped<SnowflakeService>();
 
 // Used for reading & writing sucessful Db import timestamp 
 builder.Services.AddSingleton<ImportTimestampService>();
-
 builder.Services.AddHostedService<DailyTaskService>();
 
 
