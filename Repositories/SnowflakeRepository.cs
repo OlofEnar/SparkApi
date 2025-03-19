@@ -86,5 +86,24 @@ namespace SparkApi.Repositories
                 await _conn.CloseAsync();
             }
         }
+
+        public async Task<string> TestSnowflakeAsync()
+        {
+            Console.WriteLine("Connecting to Snowflake...");
+            await _conn.OpenAsync(CancellationToken.None).ConfigureAwait(false);
+            Console.WriteLine("Connected.");
+
+            using var cmd = (SnowflakeDbCommand)_conn.CreateCommand();
+            cmd.CommandText = @$"SELECT CURRENT_USER";
+
+            using var reader = cmd.ExecuteReader();
+            if (reader.Read())
+            {
+                string response = reader.GetString(0);
+                return response;
+            }
+            await _conn.CloseAsync();
+            return "No data to read";
+        }
     }
 }
