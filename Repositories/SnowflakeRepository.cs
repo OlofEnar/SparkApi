@@ -1,7 +1,5 @@
 ﻿using Serilog;
 using Snowflake.Data.Client;
-using SparkApi.Data;
-using SparkApi.Services;
 
 namespace SparkApi.Repositories
 {

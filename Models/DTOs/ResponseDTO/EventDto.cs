@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
+﻿
 namespace SparkApi.Models.DTOs.ResponseDTO
 {
     public class EventDto
@@ -12,7 +11,6 @@ namespace SparkApi.Models.DTOs.ResponseDTO
 
         public int EventCount { get; set; }
         public List<EventDetail>? EventDetails { get; set; }
-
-        public string UserId { get; set; }
+        public required string UserId { get; set; }
     }
 }
