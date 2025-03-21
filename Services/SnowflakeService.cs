@@ -39,7 +39,7 @@ namespace SparkApi.Services
 
                 Log.ForContext("SourceContext", "ImportLogger")
                     .Information($"IMPORT SUCCESS, {userRows} new users, {eventRows} events");
-                _timestampService.WriteImportTimestamp(DateTime.UtcNow);
+                _timestampService.WriteImportTimestamp(DateTime.Now);
             }
             catch (Exception ex)
             {
@@ -84,7 +84,7 @@ namespace SparkApi.Services
             Log.Information($"Last logged import: {lastTimestamp}");
 
             int daysToImport = lastTimestamp.HasValue
-                ? (int)(DateTime.UtcNow - lastTimestamp.Value).TotalDays
+                ? (int)Math.Ceiling((DateTime.Now - lastTimestamp.Value).TotalDays)
                 : 1;
             return daysToImport;
         }
