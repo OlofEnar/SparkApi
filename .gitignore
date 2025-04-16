@@ -3,6 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/main/VisualStudio.gitignore
 
+
+Migrations
 # User-specific files
 *.rsuser
 *.suo
@@ -400,3 +402,6 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+/Keys/rsa_key.p8
+/Keys/rsa_key.pub
+/.env

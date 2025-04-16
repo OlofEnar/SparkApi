@@ -1,91 +1,105 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using NuGet.Protocol.Core.Types;
-using SparkApi.Data;
-using SparkApi.Models.DbModels;
-using SparkApi.Models.DTOs.ResponseDTO;
-using System.Diagnostics.Tracing;
+using SparkApi.Models.DTOs;
+using SparkApi.Repositories.Interfaces;
 
 
 namespace SparkApi.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController(AppDbContext dbContext, IMapper mapper) : ControllerBase
+    public class UsersController : ControllerBase
     {
-        // GET: api/<UsersController>
+        private readonly IUserRepository _userRepo;
+        private readonly IMapper _mapper;
+
+        public UsersController(IUserRepository userRepo, IMapper mapper)
+        {
+            _userRepo = userRepo;
+            _mapper = mapper;
+        }
+        
+
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> GetUsers()
         {
-            var users = await dbContext.Users.ToListAsync();
+            var users = await _userRepo.GetUsersAsync();
 
             if (users == null)
             {
                 return NotFound();
             }
 
-            var userDtos = mapper.Map<List<UserDto>>(users);
-
+            var userDtos = _mapper.Map<List<UserDto>>(users);
             return Ok(userDtos);
         }
 
-        // Get all users with included events
-        // GET: api/<UsersController>
-        [HttpGet("AllUsersWithEvents")]
-        public async Task<IActionResult> GetUsersWithEvents()
+        [HttpGet("with-aggregated-events")]
+        public async Task<IActionResult> GetUsersWithAggregatedEvents(DateOnly startDate, DateOnly endDate)
         {
-            var users = await dbContext.Users
-                .Include(u => u.Events)
-                .ToListAsync();
+            var users = await _userRepo.GetUsersWithAggregatedEventsAsync(startDate, endDate);
 
             if (users == null)
             {
                 return NotFound();
             }
 
-            var userDtos = mapper.Map<List<UserDto>>(users);
-
-            return Ok(userDtos);
+            return Ok(users);
         }
 
-        // GET api/<UsersController>/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(Guid id)
+        public async Task<IActionResult> GetUserById(Guid id)
         {
-            var user = await dbContext.Users
-                .Include(u => u.Events)
-                .FirstOrDefaultAsync(u => u.UserId == id);
+            var user = await _userRepo.GetUserByIdAsync(id);
 
             if (user == null)
             {
                 return NotFound();
             }
 
-            var userDto = mapper.Map<UserDto>(user);
-
+            var userDto = _mapper.Map<UserDto>(user);
             return Ok(userDto);
         }
 
-
-
-        // GET api/<UsersController>/5
         [HttpGet("{userId}/events")]
         public async Task<IActionResult> GetEventsByUserId(Guid userId)
         {
-            var userEvents = await dbContext.Events
-                .Where(e => e.UserId == userId)
-            .ToListAsync();
+            var userEvents = await _userRepo.GetEventsByUserIdAsync(userId);
 
             if (userEvents == null)
             {
-                return NotFound($"No events found for user {userId}");
+                return NotFound();
             }
 
-            var eventDtos = mapper.Map<List<EventDto>>(userEvents);
-
+            var eventDtos = _mapper.Map<List<EventDto>>(userEvents);
             return Ok(eventDtos);
+        }
+
+
+        [HttpGet("{userId}/aggregated-events-by-name")]
+        public async Task<IActionResult> GetAggregatedEventsByUserIdGroupedByName(DateOnly startDate, DateOnly endDate, Guid userId)
+        {
+            var userEvents = await _userRepo.GetAggregatedEventsByUserIdGroupedByNameAsync(startDate, endDate, userId);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(userEvents);
+        }
+
+        [HttpGet("{userId}/aggregated-events-by-date")]
+        public async Task<IActionResult> GetAggregatedEventsByUserIdGroupedByDate(DateOnly startDate, DateOnly endDate, Guid userId)
+        {
+            var userEvents = await _userRepo.GetAggregatedEventsByUserIdGroupedByDateAsync(startDate, endDate, userId);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(userEvents);
         }
     }
 }
