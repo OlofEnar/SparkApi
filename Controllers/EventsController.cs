@@ -35,7 +35,7 @@ namespace SparkApi.Controllers
         }
 
 
-        [HttpGet("EventsByDate")]
+        [HttpGet("events-by-date")]
         public async Task<IActionResult> GetAggregatedEventsGroupedByDate(DateOnly startDate, DateOnly endDate)
         {
             var userEvents = await _eventRepo.GetAggregatedEventsGroupedByDateAsync(startDate,endDate);
@@ -48,7 +48,7 @@ namespace SparkApi.Controllers
             return Ok(userEvents);
         }
 
-        [HttpGet("AggregateEventsByNames")]
+        [HttpGet("aggregate-events-by-names")]
         public async Task<IActionResult> GetAggregatedEventsGroupedByName(DateOnly startDate, DateOnly endDate)
         {
             var userEvents = await _eventRepo.GetAggregatedEventsGroupedByNameAsync(startDate, endDate);
@@ -61,7 +61,7 @@ namespace SparkApi.Controllers
             return Ok(userEvents);
         }
 
-        [HttpGet("AggregateEventsByName")]
+        [HttpGet("aggregate-events-by-name")]
         public async Task<IActionResult> GetDailyAggregatedEventsForEvent(DateOnly startDate, DateOnly endDate, string eventName)
         {
             var userEvents = await _eventRepo.GetDailyAggregatedEventsForEventAsync(startDate, endDate, eventName);
@@ -74,7 +74,7 @@ namespace SparkApi.Controllers
             return Ok(userEvents);
         }
 
-        [HttpGet("AggregateTimestampsByHour")]
+        [HttpGet("aggregate-timestamps-by-hour")]
         public async Task<IActionResult> GetAggregatedTimestampsByHour(DateOnly startDate, DateOnly endDate, string eventName)
         {
             var timestamps = await _eventRepo.GetAggregatedTimestampsByHourAsync(startDate, endDate, eventName);
