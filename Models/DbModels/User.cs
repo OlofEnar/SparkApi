@@ -1,24 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
-using SparkApi.Data;
-
-namespace SparkApi.Models.DbModels
+﻿namespace SparkApi.Models.DbModels
 {
     public class User
     {
-        [Key]
-        public Guid UserId { get; set; }
-        public string? FName { get; set; }
-        public string? LName { get; set; }
-        public decimal? Score { get; set; }
-        public int? TotalDailyEvents { get; set; }
-
-        public string? MostUsedDailyEvent { get; set; }
-        public int? TotalWeeklylEvents { get; set; }
-        public int? TotalEvents { get; set; }
-
-        public ICollection<Event>? Events { get; set; }
-
+        public required Guid Id { get; set; }
+        public string? ClientVersion { get; set; }
+        public string? UserCountry { get; set; }
+        public List<Event>? Events { get; set; } = [];
     }
 }

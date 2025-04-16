@@ -1,23 +1,22 @@
 ﻿using SparkApi.Models.DbModels;
 using AutoMapper;
-using SparkApi.Models;
-using SparkApi.Models.DTOs.ResponseDTO;
+using SparkApi.Models.DTOs;
 
 namespace SparkApi.Utils
 {
+    // After moving the filtering/aggregation to the backend I moved away
+    // from most of the mapping here, but I'll leave it anyway
     public class MappingProfile : Profile
     {
         public MappingProfile()
         {
-            CreateMap<CsvModel, Event>()
-                .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.UserId))
-                .ForMember(dest => dest.EventId, opt => opt.Ignore()); //Db handles the Id
+            CreateMap<Event, EventDto>()
+                            .ForMember(dest => dest.EventId, opt => opt.MapFrom(src => src.Id));
 
-            CreateMap<Event, EventDto>();
 
             // Response - Map db model to DTO
             CreateMap<User, UserDto>()
-                .ForMember(dest => dest.EventsDtos, opt => opt.MapFrom(src => src.Events));
+                .ForMember(dest => dest.EventDtos, opt => opt.MapFrom(src => src.Events));
         }
     }
 }
