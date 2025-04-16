@@ -6,6 +6,7 @@ namespace SparkApi.Repositories
     public class SnowflakeRepository
     {
         private readonly SnowflakeDbConnection _conn;
+        public string UuidRegex = "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$";
 
         public SnowflakeRepository(SnowflakeDbConnection conn)
         {
@@ -33,8 +34,9 @@ namespace SparkApi.Repositories
                             COALESCE(NULLIF(EVENT_JSON:view::STRING, ''), 'UNKNOWN') AS FromView
                         FROM ACCOUNT_EVENTS
                         WHERE event_timestamp > CURRENT_DATE - {daysToImport}
-                            AND EVENT_JSON:platform::STRING = 'PC_CLIENT'
-                            AND EVENT_JSON:client_id::STRING != ''
+                        AND EVENT_JSON:platform::STRING = 'PC_CLIENT'
+                        -- Filter out rows with invalid UUIDs
+                        AND EVENT_JSON:client_id::STRING RLIKE '{UuidRegex}'
                     ),
                     AggregatedEvents AS (
                         SELECT 
@@ -85,25 +87,6 @@ namespace SparkApi.Repositories
             {
                 await _conn.CloseAsync();
             }
-        }
-
-        public async Task<string> TestSnowflakeAsync()
-        {
-            Console.WriteLine("Connecting to Snowflake...");
-            await _conn.OpenAsync(CancellationToken.None).ConfigureAwait(false);
-            Console.WriteLine("Connected.");
-
-            using var cmd = (SnowflakeDbCommand)_conn.CreateCommand();
-            cmd.CommandText = @$"SELECT CURRENT_USER";
-
-            using var reader = cmd.ExecuteReader();
-            if (reader.Read())
-            {
-                string response = reader.GetString(0);
-                return response;
-            }
-            await _conn.CloseAsync();
-            return "No data to read";
         }
     }
 }

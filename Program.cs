@@ -8,12 +8,12 @@ using Snowflake.Data.Client;
 using SparkApi.Repositories.Interfaces;
 using Dapper;
 using SparkApi.Models;
+using Microsoft.AspNetCore.ResponseCompression;
 
 Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Host.SerilogConfiguration();
 
 builder.Services.AddCors(options =>
@@ -31,6 +31,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddResponseCompression(options =>
+{
+    options.EnableForHttps = true;
+    options.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(new[] { "application/json" });
+});
+
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
@@ -38,10 +44,9 @@ builder.Services.AddAutoMapper(typeof(MappingProfile));
 builder.Services.AddSingleton<ApiDbContext>();
 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 SqlMapper.AddTypeHandler(new DapperJsonbListTypeHandler<EventDetail>());
-SqlMapper.AddTypeHandler(new DapperDateOnlyTypeHandler());
+SqlMapper.AddTypeHandler(typeof(DateOnly), new DapperDateOnlyTypeHandler());
 
 
-//builder.Services.AddTransient<DbService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<SnowflakeRepository>();
@@ -49,6 +54,7 @@ builder.Services.AddScoped<SnowflakeService>();
 
 // Used for reading & writing sucessful Db import timestamp 
 builder.Services.AddSingleton<ImportTimestampService>();
+
 builder.Services.AddHostedService<DailyTaskService>();
 
 
@@ -74,6 +80,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
 app.UseSerilogRequestLogging();
 app.UseCors("Dev");
 app.UseHttpsRedirection();

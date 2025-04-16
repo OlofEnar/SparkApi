@@ -54,7 +54,7 @@ namespace SparkApi.Services
             string sql = @"
                 INSERT INTO users (id, client_version, user_country)
                 SELECT DISTINCT 
-                    event_data->>'UserId',
+                    (event_data->>'UserId')::uuid,
                     event_data->>'ClientVersion',
                     event_data->>'Country'
                 FROM jsonb_array_elements(@JsonData::jsonb) AS event_data
@@ -66,14 +66,15 @@ namespace SparkApi.Services
         private static string GetEventSql()
         {
             string sql = @"
-                INSERT INTO events (date, event_details, event_count, event_name, user_id)
+                INSERT INTO events (event_date, event_details, event_count, event_name, user_id)
                 SELECT 
                     (event_data->>'EventDate')::date,
                     event_data->'EventDetails',
                     (event_data->>'EventCount')::int,
                     event_data->>'EventName',
-                    event_data->>'UserId'
-                FROM jsonb_array_elements(@JsonData::jsonb) AS event_data;
+                    (event_data->>'UserId')::uuid
+                FROM jsonb_array_elements(@JsonData::jsonb) AS event_data
+                ON CONFLICT (user_id, event_date, event_name) DO NOTHING;
             ";
             return sql;
         }

@@ -14,14 +14,5 @@ namespace SparkApi.Controllers
         {
             _snowRepo = snowRepo;
         }
-
-
-        [HttpGet]
-        public async Task<IActionResult> GetUsers()
-        {
-            var result = await _snowRepo.TestSnowflakeAsync();
-
-            return Ok(result);
-        }
     }
 }

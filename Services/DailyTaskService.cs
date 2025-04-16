@@ -4,7 +4,7 @@ namespace SparkApi.Services
 {
     public class DailyTaskService: BackgroundService
     {
-        private readonly TimeSpan _scheduledTime = new(10, 23, 0);
+        private readonly TimeSpan _scheduledTime = new(8, 41, 0);
         private readonly IServiceProvider _serviceProvider;
 
         public DailyTaskService(IServiceProvider serviceProvider)
