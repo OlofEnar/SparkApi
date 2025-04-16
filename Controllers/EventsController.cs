@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using SparkApi.Models.DTOs.ResponseDTO;
+using SparkApi.Models.DTOs;
 using SparkApi.Repositories.Interfaces;
 
 
@@ -19,22 +19,9 @@ namespace SparkApi.Controllers
             _mapper = mapper;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Events()
-        {
-            var events = await _eventRepo.GetEventsAsync();
-
-            if (events == null)
-            {
-                return NotFound();
-            }
-
-            var eventDtos = _mapper.Map<List<EventDto>>(events);
-            return Ok(eventDtos);
-        }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetEventsById(int id)
+        public async Task<IActionResult> GetEventById(int id)
         {
             var userEvent = await _eventRepo.GetEventByIdAsync(id);
 
@@ -47,18 +34,57 @@ namespace SparkApi.Controllers
             return Ok(eventDto);
         }
 
-        [HttpGet("{eventName}")]
-        public async Task<IActionResult> GetEventsByName(string eventName)
+
+        [HttpGet("EventsByDate")]
+        public async Task<IActionResult> GetAggregatedEventsGroupedByDate(DateOnly startDate, DateOnly endDate)
         {
-            var userEvents = await _eventRepo.GetEventsByNameAsync(eventName);
+            var userEvents = await _eventRepo.GetAggregatedEventsGroupedByDateAsync(startDate,endDate);
 
             if (userEvents == null)
             {
                 return NotFound();
             }
 
-            var eventDtos = _mapper.Map<List<EventDto>>(userEvents);
-            return Ok(eventDtos);
+            return Ok(userEvents);
+        }
+
+        [HttpGet("AggregateEventsByNames")]
+        public async Task<IActionResult> GetAggregatedEventsGroupedByName(DateOnly startDate, DateOnly endDate)
+        {
+            var userEvents = await _eventRepo.GetAggregatedEventsGroupedByNameAsync(startDate, endDate);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(userEvents);
+        }
+
+        [HttpGet("AggregateEventsByName")]
+        public async Task<IActionResult> GetDailyAggregatedEventsForEvent(DateOnly startDate, DateOnly endDate, string eventName)
+        {
+            var userEvents = await _eventRepo.GetDailyAggregatedEventsForEventAsync(startDate, endDate, eventName);
+
+            if (userEvents == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(userEvents);
+        }
+
+        [HttpGet("AggregateTimestampsByHour")]
+        public async Task<IActionResult> GetAggregatedTimestampsByHour(DateOnly startDate, DateOnly endDate, string eventName)
+        {
+            var timestamps = await _eventRepo.GetAggregatedTimestampsByHourAsync(startDate, endDate, eventName);
+
+            if (timestamps == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(timestamps);
         }
     }
 }

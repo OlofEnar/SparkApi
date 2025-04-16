@@ -1,8 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
-using Serilog;
-using Serilog.Configuration;
-using Serilog.Events;
-using Serilog.Formatting.Json;
+﻿using Serilog;
 
 namespace SparkApi.Services
 {

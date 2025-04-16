@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace SparkApi.Models.DTOs.ResponseDTO
+namespace SparkApi.Models.DTOs
 {
     public class UserDto
     {
