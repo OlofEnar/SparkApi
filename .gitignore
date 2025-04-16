@@ -405,3 +405,4 @@ FodyWeavers.xsd
 /Keys/rsa_key.p8
 /Keys/rsa_key.pub
 /.env
+/env
